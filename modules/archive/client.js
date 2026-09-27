@@ -72,10 +72,7 @@ export function createArchiveClient(deps = {}) {
     throw lastErr || new Error('Archive shard download failed');
   }
 
-  async function queryRowsByCallsign(callsign) {
-    const normalized = normalizeCall(callsign);
-    if (!normalized) return [];
-    if (archiveRowsByCallCache.has(normalized)) return archiveRowsByCallCache.get(normalized);
+  async function queryExactCallsign(normalized) {
     const db = await openArchiveShardDbForCallsign(normalized);
     const columnRows = db.exec('PRAGMA table_info(logs)');
     const columnNames = new Set((columnRows?.[0]?.values || []).map((row) => row?.[1]).filter(Boolean));
@@ -84,11 +81,28 @@ export function createArchiveClient(deps = {}) {
     const stmt = db.prepare(`SELECT ${columns.join(', ')} FROM logs WHERE callsign = ?`);
     stmt.bind([normalized]);
     const rows = [];
-    while (stmt.step()) {
-      rows.push(stmt.getAsObject());
+    try {
+      while (stmt.step()) rows.push(stmt.getAsObject());
+    } finally {
+      stmt.free();
     }
-    stmt.free();
-    archiveRowsByCallCache.set(normalized, rows);
+    return rows;
+  }
+
+  async function queryRowsByCallsign(callsign) {
+    const normalized = normalizeCall(callsign).replace(/\s+/g, '').replace(/_/g, '/');
+    if (!normalized) return [];
+    if (archiveRowsByCallCache.has(normalized)) return archiveRowsByCallCache.get(normalized);
+    // Archive filenames sometimes encode portable calls with underscores. Each
+    // spelling hashes to its own shard, so a SQL alias in one DB is insufficient.
+    const aliases = [...new Set([normalized, normalized.replace(/\//g, '_')])];
+    const results = await Promise.allSettled(aliases.map(queryExactCallsign));
+    const rows = [...new Map(results.flatMap((result) => result.status === 'fulfilled' ? result.value : [])
+      .map((row) => [row.path, row])).values()];
+    const failed = results.find((result) => result.status === 'rejected');
+    if (failed && !rows.length) throw failed.reason;
+    // A temporarily unavailable alias must be retried on the next search.
+    if (!failed) archiveRowsByCallCache.set(normalized, rows);
     return rows;
   }
 
@@ -107,8 +121,8 @@ export function createArchiveClient(deps = {}) {
         const rowMode = normalizeArchiveModeToken(row?.mode);
         const isReconstructed = /^RECONSTRUCTED_LOGS\//i.test(path);
         const baseName = path.split('/').pop() || '';
-        const fileCall = normalizeCall(baseName.replace(/\.[^.]+$/, ''));
-        const fileCallMatch = fileCall && fileCall === call;
+        const fileCall = normalizeCall(baseName.replace(/\.[^.]+$/, '')).replace(/_/g, '/');
+        const fileCallMatch = fileCall && fileCall === call.replace(/_/g, '/');
         let score = 0;
         if (rowContest === contestKey) score += 100;
         if (rowYear === year) score += 80;

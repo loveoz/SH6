@@ -2,6 +2,13 @@
 
 Milestone-style history for SH6, based on reviewing diffs between version bump commits.
 
+## v6.3.34 (2026-09-27)
+
+- Find portable archive calls using either slash or filename underscore notation, so `YU/S55OO` finds the indexed `YU_S55OO.log` entry.
+- Query the corresponding shards, deduplicate results by archive path, and retry failed aliases without caching incomplete results. Ordinary callsigns retain a single-shard lookup.
+- Treat slash and underscore representations equally when matching competitor history filenames.
+- Add archive-client regression coverage for aliases, shard routing, deduplication, caching, and retry behavior.
+
 ## v6.3.33 (2026-09-18)
 
 - Report CQ API enrichment as `partial` instead of `OK` when score/history data is usable but one or more record-scope lookups fail.

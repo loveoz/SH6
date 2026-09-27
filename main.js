@@ -178,7 +178,7 @@
 
   let reports = [];
 
-  const APP_VERSION = 'v6.3.33';
+  const APP_VERSION = 'v6.3.34';
   const EMPTY_ANALYSIS_RESOURCE_LIST = Object.freeze([]);
   const performanceTimeline = {
     events: [],
@@ -287,7 +287,7 @@
   const RETAINED_RUNTIME_MODULE_URL = './modules/reports/retained-runtime.js?v=6.3.33';
   const NAVIGATION_RUNTIME_MODULE_URL = './modules/ui/navigation-runtime.js?v=6.3.33';
   const STORAGE_RUNTIME_MODULE_URL = './modules/storage/runtime.js?v=6.3.33';
-  const ARCHIVE_CLIENT_MODULE_URL = './modules/archive/client.js?v=6.3.33';
+  const ARCHIVE_CLIENT_MODULE_URL = './modules/archive/client.js?v=6.3.34';
   const ARCHIVE_SEARCH_RUNTIME_MODULE_URL = './modules/archive/search-runtime.js?v=6.3.33';
   const LOAD_PANEL_RUNTIME_MODULE_URL = './modules/ui/load-panel-runtime.js?v=6.3.33';
   const ANALYSIS_CONTROLS_RUNTIME_MODULE_URL = './modules/ui/analysis-controls-runtime.js?v=6.3.33';
